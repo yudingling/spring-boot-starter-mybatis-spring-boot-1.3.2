@@ -1,5 +1,5 @@
 /**
- *    Copyright 2015-2017 the original author or authors.
+ *    Copyright 2015-2019 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,11 +32,11 @@ import org.mybatis.spring.mapper.ClassPathMapperScanner;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -57,6 +57,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+
+import com.zeasn.common.ext1.datasync.ISyncSender;
+import com.zeasn.common.ext1.datasync.SyncTemplate;
 
 /**
  * {@link EnableAutoConfiguration Auto-Configuration} for Mybatis. Contributes a
@@ -90,6 +93,11 @@ public class MybatisAutoConfiguration {
   private final DatabaseIdProvider databaseIdProvider;
 
   private final List<ConfigurationCustomizer> configurationCustomizers;
+  
+  @Autowired(required = false)
+  private SyncTemplate template;
+  @Autowired(required = false)
+  private ISyncSender sender;
 
   public MybatisAutoConfiguration(MybatisProperties properties,
                                   ObjectProvider<Interceptor[]> interceptorsProvider,
@@ -116,6 +124,10 @@ public class MybatisAutoConfiguration {
   @ConditionalOnMissingBean
   public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
     SqlSessionFactoryBean factory = new SqlSessionFactoryBean();
+    
+    factory.setTemplate(this.template);
+    factory.setSender(this.sender);
+    
     factory.setDataSource(dataSource);
     factory.setVfs(SpringBootVFS.class);
     if (StringUtils.hasText(this.properties.getConfigLocation())) {
